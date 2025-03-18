@@ -3,14 +3,16 @@
     var pluginSVG =
         '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="#ffffff"><path d="M6 21H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1z"/></svg>';
 
+    var manifest = {
+        type: "other",
+        version: "0.1.2",
+        name: "Статистика",
+        description: "Плагин для ведения статистики использования Лампы",
+        component: "stats",
+    };
+
     function startPlugin() {
-        var manifest = {
-            type: "other",
-            version: "0.1.1",
-            name: "Статистика",
-            description: "Плагин для ведения статистики использования Лампы",
-            component: "stats",
-        };
+
         Lampa.Manifest.plugins = manifest;
 
         // not used currently
@@ -415,6 +417,16 @@
         }
 
         Lampa.SettingsApi.addParam({
+            component: 'stats',
+            param: {
+                type: 'title'
+            },
+            field: {
+                name: 'Отладка',
+            }
+        });  
+
+        Lampa.SettingsApi.addParam({
             component: "stats",
             param: {
                 type: "button",
@@ -460,6 +472,16 @@
                 }
             },
         });
+
+        Lampa.SettingsApi.addParam({
+            component: 'stats',
+            param: {
+                type: 'title'
+            },
+            field: {
+                name: 'Статистика',
+            }
+        });          
     }
 
 
@@ -691,6 +713,40 @@
             }
         });
     }
+
+    Lampa.SettingsApi.addParam({
+        component: 'stats',
+        param: {
+            type: 'title'
+        },
+        field: {
+            name: 'О плагине',
+        }
+    });  
+    var enableDebugModeCounter = 0;
+    Lampa.SettingsApi.addParam({
+        component: "stats",
+        param: {
+            type: "button",
+        },
+        field: {
+            name: manifest.version,
+            description: "версия"
+        },
+        onChange: () => {
+            enableDebugModeCounter++;
+            if (enableDebugModeCounter == 7) {
+                statsDebug = Lampa.Storage.get("stats_debug", false);
+                if (!statsDebug) {
+                    Lampa.Noty.show("Плагин Статистика: режим разработчика включен");
+                } else {
+                    Lampa.Noty.show("Плагин Статистика: режим разработчика выключен");
+                }
+                Lampa.Storage.set("stats_debug", !statsDebug);
+                enableDebugModeCounter = 0;
+            }
+        }
+    });
     console.log('Stats', 'Finished to create menu elements');
 
     // *** HEAD BUTTON ***
@@ -705,116 +761,145 @@
         $("#head_stats").insertAfter('div[class="head__action selector open--settings"]');
 
         $("#head_stats").on("hover:enter hover:click hover:touch", function () {
-            var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"></div><div class="broadcast__scan"><div></div></div><div class="broadcast__text"></div></div>');
 
-            // display modal and progress bar there
-            Lampa.Modal.open({
-                title: 'Итоги ' + statsYear + ' года с Лампой',
-                html: modal,
-                size: 'medium',
-                onBack: () => {
-                    Lampa.Modal.close();
-                },
-            });
+            var statsGists = Lampa.Storage.get("stats_gists", null);
+            if (statsGists && statsGists.hasOwnProperty(statsYear)) {
+                // data already generated
+                console.log('Stats', 'Data has already been generated and uploaded', statsGists[statsYear]);
 
-            var texts = ["анализируем данные", "считаем фильмы", "складываем время", "отправляем данные", "генерируем страницу с итогами", "создаем QR"];
-            var currentIndex = 0;
+                var url = "https://lamp-a.github.io/#" + statsGists[statsYear];
+                var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"><img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '"></img></div><div class="broadcast__text">' + url + '</div></div>');
 
-            function updateText() {
+                // display modal and progress bar there
+                Lampa.Modal.open({
+                    title: 'Итоги ' + statsYear + ' года с Лампой',
+                    html: modal,
+                    size: 'medium',
+                    onBack: () => {
+                        Lampa.Modal.close();
+                    },
+                });
+
                 try {
-                    // consider case when modal is closed
-                    var textElement = document.querySelector(".broadcast__text");
-                    textElement.textContent = texts[currentIndex];
-                    currentIndex++;
-                    if (currentIndex >= texts.length) {
-                        clearInterval(intervalId);
-                    }
+                    Lampa.Utils.copyTextToClipboard(url, () => {});
+                    Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
                 } catch (e) {}
-            }
-            var intervalId = setInterval(updateText, 2000);
-            updateText();
 
-            function updateLoader(intervalId, text) {
-                clearInterval(intervalId);
-                var textElement = document.querySelector(".broadcast__text");
-                textElement.innerHTML = text;
-                var loader = document.querySelector(".broadcast__scan");
-                loader.remove();
-            }
 
-            var stats_movies_analyzed = null;
-            var stats_movies = Lampa.Storage.get("stats_movies_watched");
-            if (!stats_movies) {
-                updateLoader(intervalId, "Отсутствуют данные для формирования итогов");
             } else {
-                stats_movies_analyzed = analyzeMovies(stats_movies, statsYear);
-            }
+                console.log('Stats', 'Generating data and uploading it for the first time for year', statsYear);
 
-            // upload data
-            function createGist(stats) {
-                console.log("Stats", "Creating Gist...");
-                var network = new Lampa.Reguest();
-                var gistToken = "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";
-                // https://docs.github.com/en/rest/gists/gists
-                network.silent(
-                    "https://api.github.com/gists",
-                    (data) => {
-                        // success
-                        // {
-                        //   "url": "https://api.github.com/gists/3a96be52ad8cb0daf1189fd2b08de883",
-                        //   "id": "3a96be52ad8cb0daf1189fd2b08de883",
-                        //   "html_url": "https://gist.github.com/3a96be52ad8cb0daf1189fd2b08de883",
-                        //   ...
-                        // }
-                        if (data && data.id) {
-                            console.log("Stats", "Gist created", data.id);
+                var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"></div><div class="broadcast__scan"><div></div></div><div class="broadcast__text"></div></div>');
 
-                            // var url = 'https://gist.githubusercontent.com/lamp-a/' + data.id + '/raw';
-                            var url = "https://lamp-a.github.io/#" + data.id;
+                // display modal and progress bar there
+                Lampa.Modal.open({
+                    title: 'Итоги ' + statsYear + ' года с Лампой',
+                    html: modal,
+                    size: 'medium',
+                    onBack: () => {
+                        Lampa.Modal.close();
+                    },
+                });
 
-                            updateLoader(intervalId, url);
-                            try {
-                                Lampa.Utils.copyTextToClipboard(url, () => {});
-                                Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
-                            } catch (e) {}
+                var texts = ["анализируем данные", "считаем фильмы", "складываем время", "отправляем данные", "генерируем страницу с итогами", "создаем QR"];
+                var currentIndex = 0;
 
-                            var imgElement = document.querySelector(".stats__qr");
-                            // https://quickchart.io/documentation/qr-codes/
-                            imgElement.innerHTML = '<img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '">';
-
-                            var gists = Lampa.Storage.get("stats_gists", {});
-                            gists[statsYear] = data.id;
-                            Lampa.Storage.set("stats_gists", gists);
-                        } else {
-                            console.log("Stats", "Failed to add gist", data);
-                            updateLoader(intervalId, "не удалось загрузить данные в Gist");
+                function updateText() {
+                    try {
+                        // consider case when modal is closed
+                        var textElement = document.querySelector(".broadcast__text");
+                        textElement.textContent = texts[currentIndex];
+                        currentIndex++;
+                        if (currentIndex >= texts.length) {
+                            clearInterval(intervalId);
                         }
-                    },
-                    (data) => {
-                        // error
-                        console.log("Stats", "Failed to create gist", data);
-                        updateLoader(intervalId, "не удалось загрузить данные в Gist");
-                    },
-                    JSON.stringify({
-                        files: {
-                            "data.js": {
-                                content: "var json = " + "\n" + JSON.stringify(stats, null, 2),
+                    } catch (e) {}
+                }
+                var intervalId = setInterval(updateText, 2000);
+                updateText();
+
+                function updateLoader(intervalId, text) {
+                    clearInterval(intervalId);
+                    var textElement = document.querySelector(".broadcast__text");
+                    textElement.innerHTML = text;
+                    var loader = document.querySelector(".broadcast__scan");
+                    loader.remove();
+                }
+
+                var stats_movies_analyzed = null;
+                var stats_movies = Lampa.Storage.get("stats_movies_watched");
+                if (!stats_movies) {
+                    updateLoader(intervalId, "Отсутствуют данные для формирования итогов");
+                } else {
+                    stats_movies_analyzed = analyzeMovies(stats_movies, statsYear);
+                }
+
+                // upload data
+                function createGist(stats) {
+                    console.log("Stats", "Creating Gist...");
+                    var network = new Lampa.Reguest();
+                    var gistToken = "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";
+                    // https://docs.github.com/en/rest/gists/gists
+                    network.silent(
+                        "https://api.github.com/gists",
+                        (data) => {
+                            // success
+                            // {
+                            //   "url": "https://api.github.com/gists/3a96be52ad8cb0daf1189fd2b08de883",
+                            //   "id": "3a96be52ad8cb0daf1189fd2b08de883",
+                            //   "html_url": "https://gist.github.com/3a96be52ad8cb0daf1189fd2b08de883",
+                            //   ...
+                            // }
+                            if (data && data.id) {
+                                console.log("Stats", "Gist created", data.id);
+
+                                // var url = 'https://gist.githubusercontent.com/lamp-a/' + data.id + '/raw';
+                                var url = "https://lamp-a.github.io/#" + data.id;
+
+                                updateLoader(intervalId, url);
+                                try {
+                                    Lampa.Utils.copyTextToClipboard(url, () => {});
+                                    Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
+                                } catch (e) {}
+
+                                var imgElement = document.querySelector(".stats__qr");
+                                // https://quickchart.io/documentation/qr-codes/
+                                imgElement.innerHTML = '<img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '">';
+
+                                var gists = Lampa.Storage.get("stats_gists", {});
+                                gists[statsYear] = data.id;
+                                Lampa.Storage.set("stats_gists", gists);
+                            } else {
+                                console.log("Stats", "Failed to add gist", data);
+                                updateLoader(intervalId, "не удалось загрузить данные в Gist");
+                            }
+                        },
+                        (data) => {
+                            // error
+                            console.log("Stats", "Failed to create gist", data);
+                            updateLoader(intervalId, "не удалось загрузить данные в Gist");
+                        },
+                        JSON.stringify({
+                            files: {
+                                "data.js": {
+                                    content: "var json = " + "\n" + JSON.stringify(stats, null, 2),
+                                },
                             },
-                        },
-                    }),
-                    {
-                        beforeSend: {
-                            name: "Authorization",
-                            value: "bearer " + gistToken,
-                        },
-                        headers: {
-                            Accept: "application/vnd.github+json",
-                            "X-GitHub-Api-Version": "2022-11-28",
-                        },
-                    }
-                );
+                        }),
+                        {
+                            beforeSend: {
+                                name: "Authorization",
+                                value: "bearer " + gistToken,
+                            },
+                            headers: {
+                                Accept: "application/vnd.github+json",
+                                "X-GitHub-Api-Version": "2022-11-28",
+                            },
+                        }
+                    );
+                }
+                createGist(stats_movies_analyzed);
             }
-            createGist(stats_movies_analyzed);
         });
     }
     if (statsYear) { // the button should be added only from Dec 14 to Jan 15

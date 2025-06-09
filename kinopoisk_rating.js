@@ -13,9 +13,9 @@
         // google script is used to act as CORS proxy
         // one request returns 20 records only
         console.log('Kinopoisk Ratings', 'Getting the rating of the next 20 movies starting from ' + String(offset) + '...');
-        network.silent('https://script.google.com/macros/s/AKfycbwqmWyAH66dliw2EfEkvnnhlhEnXHwAwD6v2oBoV4oXtKyYy2wLat4kTVg_6K54rgk6/exec?method=getRated&oauth=' + oauth + '&offset=' + String(offset),
+        network.silent('https://script.google.com/macros/s/AKfycbyW-G0Kicxj6N_cqb-yCzYNXFL4uxKSRi7B51qrNYsVa1wmuVr4adZ8tOHpGvNXtoWS/exec?method=getRated&oauth=' + oauth + '&offset=' + String(offset),
             function (data) { // on success
-                if (data && data.data.userProfile && data.data.userProfile.userData && data.data.userProfile.userData.ratedOrWatchedMovies) {
+                if (data && data.data && data.data.userProfile && data.data.userProfile.userData && data.data.userProfile.userData.ratedOrWatchedMovies) {
                     var ratingsCount = data.data.userProfile.userData.ratedOrWatchedMovies.total;
                     console.log('Kinopoisk Ratings', 'The total count of ratings found: ' + String(ratingsCount));
                     var receivedRatings = data.data.userProfile.userData.ratedOrWatchedMovies.items;
@@ -76,7 +76,7 @@
     function removeFromToBeWatched(oauth, kinopoiskId) {
         console.log('Kinopoisk Ratings', 'Removing the movie ' + String(kinopoiskId) + ' from the list of movies to be watched on Kinopoisk');
         
-        network.silent('https://script.google.com/macros/s/AKfycbwqmWyAH66dliw2EfEkvnnhlhEnXHwAwD6v2oBoV4oXtKyYy2wLat4kTVg_6K54rgk6/exec?method=setWatchLater&oauth=' + oauth + '&movie=' + String(kinopoiskId),
+        network.silent('https://script.google.com/macros/s/AKfycbyW-G0Kicxj6N_cqb-yCzYNXFL4uxKSRi7B51qrNYsVa1wmuVr4adZ8tOHpGvNXtoWS/exec?method=setWatchLater&oauth=' + oauth + '&movie=' + String(kinopoiskId),
             function (data) { // on success
                 if (data && data.data && data.data.movie && data.data.movie.plannedToWatch && data.data.movie.plannedToWatch.remove && data.data.movie.plannedToWatch.remove.status == 'SUCCESS') {
                     console.log('Kinopoisk Ratings', 'Movie ' + String(kinopoiskId) + ' removed from the list of movies to be watched on Kinopoisk');
@@ -94,7 +94,7 @@
     function setRating(oauth, kinopoiskId, rating, background=false) {
         if (!background) { $('.button--kinopoisk_rating_icon').replaceWith(buttonLoader); }
 
-        network.silent('https://script.google.com/macros/s/AKfycbwqmWyAH66dliw2EfEkvnnhlhEnXHwAwD6v2oBoV4oXtKyYy2wLat4kTVg_6K54rgk6/exec?method=setVote&oauth=' + oauth + '&movie=' + String(kinopoiskId) + '&rate=' + rating,
+        network.silent('https://script.google.com/macros/s/AKfycbyW-G0Kicxj6N_cqb-yCzYNXFL4uxKSRi7B51qrNYsVa1wmuVr4adZ8tOHpGvNXtoWS/exec?method=setVote&oauth=' + oauth + '&movie=' + String(kinopoiskId) + '&rate=' + rating,
             function (data) { // on success
                 if (data && data.data && data.data.movie && data.data.movie.vote && data.data.movie.vote.set && data.data.movie.vote.set.status == 'SUCCESS') {
                     var kinopoiskRatings = Lampa.Storage.get('kinopoisk_my_ratings', {});
@@ -153,7 +153,7 @@
     function displayTrailers(kinopoiskId, oauth) {
         if (kinopoiskId) {
             console.log('Kinopoisk Ratings', 'Getting trailers for movie ' + String(kinopoiskId) + '...');
-            network.silent('https://script.google.com/macros/s/AKfycbwqmWyAH66dliw2EfEkvnnhlhEnXHwAwD6v2oBoV4oXtKyYy2wLat4kTVg_6K54rgk6/exec?method=getTrailers&oauth=' + oauth + '&movie=' + String(kinopoiskId),
+            network.silent('https://script.google.com/macros/s/AKfycbyW-G0Kicxj6N_cqb-yCzYNXFL4uxKSRi7B51qrNYsVa1wmuVr4adZ8tOHpGvNXtoWS/exec?method=getTrailers&oauth=' + oauth + '&movie=' + String(kinopoiskId),
                 function (data) { // on success
                     if (data && data.data && data.data.movie && data.data.movie.trailers && data.data.movie.trailers.total > 0) {
                         console.log('Kinopoisk Ratings', 'Movie ' + String(kinopoiskId) + ' trailers received, count ' + String(data.data.movie.trailers.total));
@@ -219,7 +219,7 @@
     function displayTrivias(kinopoiskId, oauth) {
         if (kinopoiskId) {
             console.log('Kinopoisk Ratings', 'Getting trivias for movie ' + String(kinopoiskId) + '...');
-            network.silent('https://script.google.com/macros/s/AKfycbwqmWyAH66dliw2EfEkvnnhlhEnXHwAwD6v2oBoV4oXtKyYy2wLat4kTVg_6K54rgk6/exec?method=getTrivias&oauth=' + oauth + '&movie=' + String(kinopoiskId),
+            network.silent('https://script.google.com/macros/s/AKfycbyW-G0Kicxj6N_cqb-yCzYNXFL4uxKSRi7B51qrNYsVa1wmuVr4adZ8tOHpGvNXtoWS/exec?method=getTrivias&oauth=' + oauth + '&movie=' + String(kinopoiskId),
                 function (data) { // on success
                     if (data && data.data && data.data.movie && data.data.movie.trivias) {
                         if (data.data.movie.trivias.total > 0) {
@@ -463,7 +463,7 @@
                                     } else {
                                         // delete the rating
                                         console.log('Kinopoisk Ratings', 'Deleting the rating of the movie ' + String(kinopoiskId) + ' (TMDB id: ' + String(tmdbId) + ')')
-                                        network.silent('https://script.google.com/macros/s/AKfycbwqmWyAH66dliw2EfEkvnnhlhEnXHwAwD6v2oBoV4oXtKyYy2wLat4kTVg_6K54rgk6/exec?method=removeVote&oauth=' + oauth + '&movie=' + String(kinopoiskId),
+                                        network.silent('https://script.google.com/macros/s/AKfycbyW-G0Kicxj6N_cqb-yCzYNXFL4uxKSRi7B51qrNYsVa1wmuVr4adZ8tOHpGvNXtoWS/exec?method=removeVote&oauth=' + oauth + '&movie=' + String(kinopoiskId),
                                             function (data) { // on success
                                                 if (data && data.data && data.data.movie && data.data.movie.vote && data.data.movie.vote.remove && data.data.movie.vote.remove.status == 'SUCCESS') {
                                                     delete kinopoiskRatings[kinopoiskId];

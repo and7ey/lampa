@@ -1,11 +1,11 @@
 (function () {
     "use strict";
     var pluginSVG =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="#ffffff"><path d="M6 21H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1z"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="#ffffff"><path d="M6 21H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1z"/></svg>';
 
     var manifest = {
         type: "other",
-        version: "0.1.2",
+        version: "0.2.0",
         name: "Статистика",
         description: "Плагин для ведения статистики использования Лампы",
         component: "stats",
@@ -51,7 +51,7 @@
         // monitor reactions
         Lampa.Storage.listener.follow("change", function (e) {
             if (e.name == "mine_reactions") {
-                console.log("Stats", "storage change - mine_reactions", e);
+                console.log("Stats", "Storage change - mine_reactions", e);
                 // {
                 //  "name": "mine_reactions",
                 // "value": {
@@ -70,6 +70,10 @@
                 var movies_watched = Lampa.Storage.get("stats_movies_watched", {});
                 var movies_watched_updated = updateReactions(e, movies_watched);
                 Lampa.Storage.set("stats_movies_watched", movies_watched_updated);
+            } else if (e.name == "stats_movies_watched") {
+                console.log("Stats", "Storage change - stats_movies_watched", e);
+                // Lampac sync
+                goExport("stats_movies_watched");
             }
         });
 
@@ -104,15 +108,23 @@
                     console.log("Stats", "hash", hash);
 
                     var hash_to_movie = Lampa.Storage.get("stats_movies_watched", {});
-                    hash_to_movie[hash] = {
+                    hash_to_movie[hash] = hash_to_movie[hash] || {};
+
+                    var obj = {
                         id: card.id,
-                        ot: card.original_name ? card.original_name : card.original_title,
+                        ot: card.original_name || card.original_title,
                         t: card.title,
-                        g: card.genres.map(genre => genre.id), // keep ids only
+                        g: card.genres.map(function(g){ return g.id; }), // keep ids only
                         i: card.img,
                         ty: card.seasons ? "tv" : "movie",
-                        y: new Date().getFullYear(),
+                        y: new Date().getFullYear()
                     };
+
+                    for (var k in obj) {
+                        if (obj.hasOwnProperty(k)) {
+                            hash_to_movie[hash][k] = obj[k];
+                        }
+                    }                    
                     Lampa.Storage.set("stats_movies_watched", hash_to_movie);
                 }
             }
@@ -210,7 +222,7 @@
                     if (watchedExamples.length < 3) {
                         watchedExamples.push(getMovieDetails(movie));
                     }
-    
+
                     if (movie.d && (!firstMovieOfYear || movie.d < firstMovieOfYear.date)) {
                         firstMovieOfYear = {
                             date: movie.d,
@@ -231,7 +243,7 @@
                 if (movie.r && movie.r.length > 0) {
                     moviesWithReactions++;
                 }
-    
+
                 // calculate cardsViewedOnly
                 console.log('Stats', 'Counting watched cards...');
                 if (!movie.d) {
@@ -240,7 +252,7 @@
                         cardsViewedOnlyExamples.push(getMovieDetails(movie));
                     }
                 }
-    
+
                 // calculate genres
                 console.log('Stats', 'Calculating popular genres...');
                 if (movie.g && movie.d && movie.p && movie.p > 90) { // consider watched movies only
@@ -248,19 +260,19 @@
                         genreCounts[genre] = (genreCounts[genre] || 0) + 1;
                     });
                 }
-    
+
                 console.log('Stats', 'Counting number of movies watched each day and each month...');
                 if (movie.d) {
                     var date = new Date(movie.d);
                     var day = (date.getDay() + 6) % 7 + 1; // convert 0-6 (Sun-Sat) to 1-7 (Mon-Sun)
                     var month = date.getMonth() + 1;
                     var year = date.getFullYear();
-    
+
                     // calculate number of movies per day and per month
                     dayCounts[day] = (dayCounts[day] || 0) + 1;
                     monthCounts[month] = (monthCounts[month] || 0) + 1;
                 }
-    
+
                 // count number of each reaction, will be used later
                 console.log('Stats', 'Count number of each reaction...');
                 if (movie.r) {
@@ -268,12 +280,12 @@
                         reactionCounts[reaction] = (reactionCounts[reaction] || 0) + 1;
                     });
                 }
-    
+
                 // count total time watched
                 console.log('Stats', 'Count total watch time...', movie.ti);
                 if (movie.ti) {
                     totalTime += movie.ti;
-    
+
                     // count max movie time watched
                     if (movie.ti > maxTime) {
                         maxTime = movie.ti;
@@ -281,18 +293,18 @@
                     }
                 }
             }
-    
+
             console.log('Stats', 'Choosing most popular genre...');
             var topGenre = null;
             if (Object.keys(genreCounts).length !== 0) {
                 var topGenre = Object.keys(genreCounts)
-                    .sort(function (a, b) {
-                        return genreCounts[b] - genreCounts[a];
-                    })
-                    .slice(0, 1);
+                .sort(function (a, b) {
+                    return genreCounts[b] - genreCounts[a];
+                })
+                .slice(0, 1);
             }
             console.log('Stats', 'Most popular genre is', topGenre);
-    
+
             console.log('Stats', 'Choosing most popular reaction...');
             var mostPopularReaction = null;
             if (Object.keys(reactionCounts).length !== 0) {
@@ -301,7 +313,7 @@
                 })[0];
             }
             console.log('Stats', 'Most popular reaction is', mostPopularReaction);
-    
+
             console.log('Stats', 'Choosing most popular day...');
             var mostPopularDay = null;
             if (Object.keys(dayCounts).length !== 0) {
@@ -353,35 +365,35 @@
                 mostPopularDay: mostPopularDay ? Lampa.Lang.translate("week_" + mostPopularDay).toLowerCase() : null,
                 mostPopularMonth: mostPopularMonth ? Lampa.Lang.translate("month_" + mostPopularMonth).toLowerCase().substring(0,3) : null,
                 firstMovieOfYear: firstMovieOfYear
-                    ? {
-                          date: Lampa.Utils.parseTime(firstMovieOfYear.date).short.toLowerCase(),
-                          movie: firstMovieOfYear.movie,
-                      }
-                    : null,
+                ? {
+                  date: Lampa.Utils.parseTime(firstMovieOfYear.date).short.toLowerCase(),
+                  movie: firstMovieOfYear.movie,
+              }
+              : null,
                 totalTime: Math.floor(totalTime / 3600), // seconds to hours
                 maxTimeMovie: maxTimeMovie
-                    ? {
+                ? {
                           time: Math.floor(maxTime / 60), // seconds to minutes
                           movie: getMovieDetails(maxTimeMovie),
                       }
-                    : null,
-            };
-            console.log('Stats', 'Result json generated');
-        } catch (err) {
-            console.log('Stats', 'Failed to generate json', err);
+                      : null,
+                  };
+                  console.log('Stats', 'Result json generated');
+              } catch (err) {
+                console.log('Stats', 'Failed to generate json', err);
+            }
+
+            return result;
         }
 
-        return result;
-    }
-
     // *** MENU ***
-    console.log('Stats', 'Starting to create menu elements...');
-    
-    Lampa.SettingsApi.addComponent({
-        component: "stats",
-        icon: pluginSVG,
-        name: "Статистика",
-    });
+        console.log('Stats', 'Starting to create menu elements...');
+
+        Lampa.SettingsApi.addComponent({
+            component: "stats",
+            icon: pluginSVG,
+            name: "Статистика",
+        });
 
     // TEMP - doesn't work
     // setTimeout(() => {
@@ -390,13 +402,13 @@
     //   parentContainer.insertBefore(statsElement, parentContainer.firstChild);
     // }, 2000);
 
-    
-    var currentDate = new Date();
-    var currentMonth = currentDate.getMonth() + 1; 
-    var currentDay = currentDate.getDate();
-    var currentYear = currentDate.getFullYear();
 
-    var statsYear = null;
+        var currentDate = new Date();
+        var currentMonth = currentDate.getMonth() + 1; 
+        var currentDay = currentDate.getDate();
+        var currentYear = currentDate.getFullYear();
+
+        var statsYear = null;
 
     if (currentMonth === 12 && currentDay >= 14 && currentDay <= 31) { // from Dec 14 to Dec 31
         statsYear = currentYear;
@@ -499,16 +511,16 @@
         } else {
             i = iNumber % 10;
             switch (i) {
-                case 1:
-                    sEnding = aEndings[0];
-                    break;
-                case 2:
-                case 3:
-                case 4:
-                    sEnding = aEndings[1];
-                    break;
-                default:
-                    sEnding = aEndings[2];
+            case 1:
+                sEnding = aEndings[0];
+                break;
+            case 2:
+            case 3:
+            case 4:
+                sEnding = aEndings[1];
+                break;
+            default:
+                sEnding = aEndings[2];
             }
         }
         return sEnding;
@@ -583,7 +595,7 @@
         } catch (err) {
             console.log('Stats', 'Failed to display not finished movies count');
         }
-            
+
 
         try {
             Lampa.SettingsApi.addParam({
@@ -614,7 +626,7 @@
         } catch (err) {
             console.log('Stats', 'Failed to display most popular genre');
         }
-            
+
         try {
             if (result["mostPopularReaction"]) {
                 Lampa.SettingsApi.addParam({
@@ -633,7 +645,7 @@
         } catch (err) {
             console.log('Stats', 'Failed to display most popular reaction');
         }
-            
+
         try {
             if (result["mostPopularDay"]) {
                 Lampa.SettingsApi.addParam({
@@ -896,12 +908,12 @@
                                 "X-GitHub-Api-Version": "2022-11-28",
                             },
                         }
-                    );
+                        );
                 }
                 createGist(stats_movies_analyzed);
             }
         });
-    }
+}
     if (statsYear) { // the button should be added only from Dec 14 to Jan 15
         addHeadButton();
     }
@@ -948,6 +960,95 @@
             }
         }
     }
+
+
+    // *** SYNC (based on lampac's sync.js) ***
+    function account(url) {
+        url = url + '';
+        if (url.indexOf('account_email=') == -1) {
+            var email = Lampa.Storage.get('account_email');
+            if (email) url = Lampa.Utils.addUrlComponent(url, 'account_email=' + encodeURIComponent(email));
+        }
+        if (url.indexOf('uid=') == -1) {
+            var uid = Lampa.Storage.get('lampac_unic_id', '');
+            if (uid) url = Lampa.Utils.addUrlComponent(url, 'uid=' + encodeURIComponent(uid));
+        }
+        return url;
+    }    
+
+    function goExport(path) {
+        var value = {};
+
+        value['stats_movies_watched'] = Lampa.Storage.get("stats_movies_watched", {});
+
+        var url = account('http://192.168.1.125:9118/storage/set?path=' + path);
+        console.log('Stats', 'Syncing data - export', url);
+        $.ajax({
+            url: url,
+            // url: account('storage/set?path=' + path),
+            type: 'POST',
+            data: JSON.stringify(value),
+            async: true,
+            cache: false,
+            contentType: false,
+            processData: false,
+            success: function(j) {
+                console.log('Stats', 'Syncing data - export: success');
+                if (j.success && j.fileInfo) {
+                    localStorage.setItem('lampac_' + path, j.fileInfo.changeTime);
+                } else {
+                    console.log('Stats', 'Lampac Storage export', 'error', j);
+                    console.log('Stats', 'Lampac user id (uid) or Cub account are required to sync data');
+                }
+            },
+            error: function() {
+                console.log('Stats', 'Lampac Storage export', 'error');
+            }
+        });
+    }
+
+    function goImport(path) {
+        var network = new Lampa.Reguest();
+        var url = account('http://192.168.1.125:9118/storage/get?path=' + path);
+        console.log('Stats', 'Syncing data - import', url);
+        network.silent(url, function(j) {
+        // network.silent(account('storage/get?path=' + path), function(j) {
+            if (j.success && j.fileInfo && j.data) {
+                if (j.fileInfo.changeTime != Lampa.Storage.get('lampac_' + path, '0')) {
+                    var data = JSON.parse(j.data);
+                    if (data.stats_movies_watched !== "undefined") {
+                        var remoteData = JSON.parse(data["stats_movies_watched"]);
+
+                        var localData = Lampa.Storage.get("stats_movies_watched", {});
+
+                        var hash, itemData, itemLocal;
+                        for (hash in remoteData) {
+                            itemData = remoteData[hash];
+                            itemLocal = localData[hash];
+
+                            if (!itemLocal) {
+                                localData[hash] = itemData; // new record
+                            } else {
+                                if (typeof itemData.p !== "undefined") {
+                                    if (typeof itemLocal.p === "undefined" || itemLocal.p < itemData.p) {
+                                        itemLocal.p = itemData.p;
+                                    }
+                                }
+                            }
+                        }
+                        Lampa.Storage.set("stats_movies_watched", localData);
+
+                    }   
+                    localStorage.setItem('lampac_' + path, j.fileInfo.changeTime);
+                }
+            } else if (j.msg && j.msg == 'outFile') {
+                goExport(path);
+            }
+        });
+    }    
+
+    goImport('stats_movies_watched');
+
 
 
     if (window.appready) {

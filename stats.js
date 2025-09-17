@@ -5,7 +5,7 @@
 
     var manifest = {
         type: "other",
-        version: "0.2.0",
+        version: "0.2.1",
         name: "Статистика",
         description: "Плагин для ведения статистики использования Лампы",
         component: "stats",
@@ -1017,7 +1017,7 @@
                 if (j.fileInfo.changeTime != Lampa.Storage.get('lampac_' + path, '0')) {
                     var data = JSON.parse(j.data);
                     if (data.stats_movies_watched !== "undefined") {
-                        var remoteData = JSON.parse(data["stats_movies_watched"]);
+                        var remoteData = data["stats_movies_watched"];
 
                         var localData = Lampa.Storage.get("stats_movies_watched", {});
 

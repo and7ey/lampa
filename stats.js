@@ -5,7 +5,7 @@
 
     var manifest = {
         type: "other",
-        version: "0.2.1",
+        version: "0.2.5",
         name: "Статистика",
         description: "Плагин для ведения статистики использования Лампы",
         component: "stats",
@@ -196,13 +196,17 @@
 
         var watchedMovies = 0;
         var watchedExamples = [];
+        var watchedFullList = [];
         var genreCounts = {};
         var unwatchedMovies = 0;
+        var unwatchedFullList = [];
         var unwatchedExamples = [];
         var moviesWithReactions = 0;
+        var moviesWithReactionsFullList = [];
         var reactionCounts = {};
         var cardsViewedOnly = 0;
         var cardsViewedOnlyExamples = [];
+        var cardsViewedOnlyFullList = [];
         var dayCounts = {};
         var seasonCounts = {};
         var monthCounts = {};
@@ -222,6 +226,7 @@
                     if (watchedExamples.length < 3) {
                         watchedExamples.push(getMovieDetails(movie));
                     }
+                    watchedFullList.push(getMovieDetails(movie));
 
                     if (movie.d && (!firstMovieOfYear || movie.d < firstMovieOfYear.date)) {
                         firstMovieOfYear = {
@@ -236,13 +241,16 @@
                     if (unwatchedExamples.length < 3) {
                         unwatchedExamples.push(getMovieDetails(movie));
                     }
+                    unwatchedFullList.push(getMovieDetails(movie));
                 }
 
                 // calculate moviesWithReactions
                 console.log('Stats', 'Counting movies with reactions...');
                 if (movie.r && movie.r.length > 0) {
                     moviesWithReactions++;
+                    moviesWithReactionsFullList.push(getMovieDetails(movie));
                 }
+                
 
                 // calculate cardsViewedOnly
                 console.log('Stats', 'Counting watched cards...');
@@ -251,6 +259,7 @@
                     if (cardsViewedOnlyExamples.length < 3) {
                         cardsViewedOnlyExamples.push(getMovieDetails(movie));
                     }
+                    cardsViewedOnlyFullList.push(getMovieDetails(movie));
                 }
 
                 // calculate genres
@@ -342,6 +351,7 @@
                 watchedMovies: {
                     count: watchedMovies,
                     examples: watchedExamples,
+                    list: watchedFullList
                 },
                 topGenre: topGenre ? {
                     genre: Lampa.Api.sources.tmdb.getGenresNameFromIds("movie", [topGenre[0]])[0].toLowerCase(), // TODO: TV series not supported
@@ -355,12 +365,15 @@
                 unwatchedMovies: {
                     count: unwatchedMovies,
                     examples: unwatchedExamples,
+                    list: unwatchedFullList
                 },
                 moviesWithReactions: moviesWithReactions,
+                moviesWithReactionsList: moviesWithReactionsFullList,
                 mostPopularReaction: mostPopularReaction, 
                 cardsViewedOnly: {
                     count: cardsViewedOnly, 
                     examples: cardsViewedOnlyExamples,
+                    list: cardsViewedOnlyFullList
                 },
                 mostPopularDay: mostPopularDay ? Lampa.Lang.translate("week_" + mostPopularDay).toLowerCase() : null,
                 mostPopularMonth: mostPopularMonth ? Lampa.Lang.translate("month_" + mostPopularMonth).toLowerCase().substring(0,3) : null,
@@ -550,15 +563,87 @@
             console.log('Stats', 'Failed to display first movie of the year');
         }
 
+    
+        function transformMoviesToCards(data) {
+            var result = [];
+            var keys = Object.keys(data);
+
+            for (var i = 0; i < keys.length; i++) {
+                var item = data[keys[i]];
+
+                var poster_path = null;
+                if (item.i) {
+                    var url = item.i.split('?')[0]; // убираем query string
+                    var parts = url.split('/');
+                    // parts = ["http:", "", "imagetmdb.com", "t", "p", "w300", "xxx.jpg"]
+                    poster_path = '/' + parts.slice(6).join('/');
+                }
+
+                result.push({
+                    id: item.id,
+                    original_title: item.ot,
+                    poster_path: poster_path,
+                    title: item.t,
+                    source: "tmdb"
+                });
+            }
+
+            return result;
+        }        
+
+        function full(params, oncomplete, onerror) {
+            // https://github.com/yumata/lampa-source/blob/main/src/utils/reguest.js
+            // https://github.com/yumata/lampa-source/blob/main/plugins/collections/api.js
+            var moviesList = [];
+            if (params.component === 'stats_watched_movies') {
+                moviesList = transformMoviesToCards(result["watchedMovies"]["list"]);
+            } else if (params.component === 'stats_watched_movies_with_reactions') {
+                moviesList = transformMoviesToCards(result["moviesWithReactionsList"]);
+            } else if (params.component === 'stats_unwatched_movies') {
+                moviesList = transformMoviesToCards(result["unwatchedMovies"]["list"]);
+            } else if (params.component === 'stats_cards_viewed_only') {
+                moviesList = transformMoviesToCards(result["cardsViewedOnly"]["list"]);
+            }
+            oncomplete({
+                "secuses": true,
+                "page": 1,
+                "results": moviesList
+            });
+        }
+
+        function component(object) {
+            var comp = new Lampa.InteractionCategory(object);
+            comp.create = function() {
+                full(object, this.build.bind(this), this.empty.bind(this));
+            };
+            comp.nextPageReuest = function(object, resolve, reject) {
+                full(object, resolve.bind(comp), reject.bind(comp));
+            };
+            return comp;
+        }
+        
+        Lampa.Component.add('stats_watched_movies', component);
+        Lampa.Component.add('stats_watched_movies_with_reactions', component);
+        Lampa.Component.add('stats_unwatched_movies', component);
+        Lampa.Component.add('stats_cards_viewed_only', component);
         try {
             Lampa.SettingsApi.addParam({
                 component: "stats",
                 param: {
-                    type: "static",
+                    type: "button",
+                    name: "stats_button_watched_movies"
                 },
                 field: {
                     name: result["watchedMovies"].count,
                     description: getNumEnding(result["watchedMovies"].count, ["фильм просмотрен", "фильма просмотрено", "фильмов просмотрено"]),
+                },
+                onChange: () => {
+                    Lampa.Activity.push({
+                        url: '',
+                        title: 'Просмотренные фильмы',
+                        component: 'stats_watched_movies',
+                        page: 1
+                    });        
                 }
             });
         } catch (err) {
@@ -570,12 +655,21 @@
             Lampa.SettingsApi.addParam({
                 component: "stats",
                 param: {
-                    type: "static",
+                    type: "button",
+                    name: "stats_button_movies_with_reactions"
                 },
                 field: {
                     name: result["moviesWithReactions"],
-                    description: getNumEnding(result["watchedMovies"].count, ["фильм", "фильма", "фильмов"]) + " с оценкой",
-                }
+                    description: getNumEnding(result["moviesWithReactions"].count, ["фильм", "фильма", "фильмов"]) + " с оценкой",
+                },
+                onChange: () => {
+                    Lampa.Activity.push({
+                        url: '',
+                        title: 'Фильмы с оценкой',
+                        component: 'stats_watched_movies_with_reactions',
+                        page: 1
+                    });                    
+                }                
             });
         } catch (err) {
             console.log('Stats', 'Failed to display number of reactions');
@@ -585,11 +679,20 @@
             Lampa.SettingsApi.addParam({
                 component: "stats",
                 param: {
-                    type: "static",
+                    type: "button",
+                    name: "stats_button_unwatched_movies"
                 },
                 field: {
                     name: result["unwatchedMovies"].count,
                     description: getNumEnding(result["unwatchedMovies"].count, ["фильм недосмотрен", "фильма недосмотрено", "фильмов недосмотрено"]),
+                },
+                onChange: () => {
+                    Lampa.Activity.push({
+                        url: '',
+                        title: 'Недосмотренные фильмы',
+                        component: 'stats_unwatched_movies',
+                        page: 1
+                    });                    
                 }
             });
         } catch (err) {
@@ -601,11 +704,20 @@
             Lampa.SettingsApi.addParam({
                 component: "stats",
                 param: {
-                    type: "static",
+                    type: "button",
+                    name: "stats_button_cards_viewed_only"
                 },
                 field: {
                     name: result["cardsViewedOnly"].count,
                     description: getNumEnding(result["cardsViewedOnly"].count, ["карточка фильма просмотрена", "карточки фильмов просмотрено", "карточек фильмов просмотрено"]),
+                },
+                onChange: () => {
+                    Lampa.Activity.push({
+                        url: '',
+                        title: 'Просмотренные карточки',
+                        component: 'stats_cards_viewed_only',
+                        page: 1
+                    });                    
                 }
             });
         } catch (err) {

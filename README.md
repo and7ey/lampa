@@ -190,7 +190,7 @@ https://and7ey.github.io/lampa/head_filter.js
 
 ![2025-03-16 12 17 29](https://github.com/user-attachments/assets/60934e59-83f6-4e1b-92bb-4d6bafcbc06e)
 
-В конце года плагин создает страницу "Итоги года" с вашими персональными итогами года ([пример](https://lamp-a.github.io/#b7d3da5157147e4da223d16235ac6398)).
+В конце года плагин создает страницу "Итоги года" с вашими персональными итогами года ([пример](https://lampab.github.io/#86fd94b5e689041706a3bcdd5968340b)).
 
 <div>
   <img src="https://github.com/user-attachments/assets/4c366692-be4e-47fa-a404-dab8db0c0641" width="324px">

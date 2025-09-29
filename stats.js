@@ -891,7 +891,7 @@
                 // data already generated
                 console.log('Stats', 'Data has already been generated and uploaded', statsGists[statsYear]);
 
-                var url = "https://lamp-a.github.io/#" + statsGists[statsYear];
+                var url = "https://lampab.github.io/#" + statsGists[statsYear];
                 var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"><img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '"></img></div><div class="broadcast__text">' + url + '</div></div>');
 
                 // display modal and progress bar there
@@ -978,7 +978,7 @@
                                 console.log("Stats", "Gist created", data.id);
 
                                 // var url = 'https://gist.githubusercontent.com/lamp-a/' + data.id + '/raw';
-                                var url = "https://lamp-a.github.io/#" + data.id;
+                                var url = "https://lampab.github.io/#" + data.id;
 
                                 updateLoader(intervalId, url);
                                 try {

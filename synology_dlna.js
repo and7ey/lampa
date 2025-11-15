@@ -20,7 +20,7 @@
           body.append(scroll.render(true));
           tree = {
             device: {name: server},
-            tree: [{title:"/", id: 0}]
+            tree: [{title:"/video", id: 1}]
           };
           this.displayFolder();
         } else {

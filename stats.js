@@ -500,6 +500,19 @@
         });
 
         Lampa.SettingsApi.addParam({
+            component: "stats",
+            param: {
+                type: "button",
+            },
+            field: {
+                name: "Создать кнопку в шапке",
+            },
+            onChange: () => {
+                addHeadButton();
+            }
+        });
+        
+        Lampa.SettingsApi.addParam({
             component: 'stats',
             param: {
                 type: 'title'

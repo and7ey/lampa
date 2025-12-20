@@ -5,7 +5,7 @@
 
     var manifest = {
         type: "other",
-        version: "0.2.5",
+        version: "0.2.6",
         name: "Статистика",
         description: "Плагин для ведения статистики использования Лампы",
         component: "stats",
@@ -430,7 +430,8 @@
     }
 
     console.log('Stats', 'Detected the year to work with', statsYear);
-    console.log('Stats', 'The current year is', currentYear);
+    console.log('Stats', 'The current month is', currentMonth);
+    console.log('Stats', 'The current day is', currentDay);
 
     var statsDebug = Lampa.Storage.get("stats_debug", false);
 
@@ -962,7 +963,7 @@
                 function createGist(stats) {
                     console.log("Stats", "Creating Gist...");
                     var network = new Lampa.Reguest();
-                    var gistToken = "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";
+                    var gistToken = "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";
                     // https://docs.github.com/en/rest/gists/gists
                     network.silent(
                         "https://api.github.com/gists",
@@ -1027,6 +1028,7 @@
         });
 }
     if (statsYear) { // the button should be added only from Dec 14 to Jan 15
+        console.log("Stats", "New Year time, head button to be shown");
         addHeadButton();
     }
 

@@ -876,6 +876,8 @@
 
     // *** HEAD BUTTON ***
     function addHeadButton() {
+        console.log('Stats', 'Starting to create head button...');
+        
         $("#head_stats").remove();
 
         var headButton = '<div id="head_stats" class="head__action selector stats-data">' + pluginSVG + "</div>";
@@ -1026,6 +1028,7 @@
                 createGist(stats_movies_analyzed);
             }
         });
+        console.log('Stats', 'Finished to create head button');
 }
     if (statsYear) { // the button should be added only from Dec 14 to Jan 15
         console.log("Stats", "New Year time, head button to be shown");

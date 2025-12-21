@@ -1,11 +1,11 @@
 (function () {
     "use strict";
     var pluginSVG =
-    '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="#ffffff"><path d="M6 21H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1z"/></svg>';
+    '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 24 24" fill="currentColor"><path d="M6 21H3a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1zm7 0h-3a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1z"/></svg>';
 
     var manifest = {
         type: "other",
-        version: "0.2.6",
+        version: "0.2.7",
         name: "Статистика",
         description: "Плагин для ведения статистики использования Лампы",
         component: "stats",
@@ -891,157 +891,167 @@
     function addHeadButton() {
         console.log('Stats', 'Starting to create head button...');
         
-        $("#head_stats").remove();
+        var timer = setInterval(function () {
+            var actions = $('.head__actions');
 
-        var headButton = '<div id="head_stats" class="head__action selector stats-data">' + pluginSVG + "</div>";
+            if (actions.length) {
+                clearInterval(timer);
+                console.log('[Stats] Head actions appeared');
 
-        $("#app > div.head > div > div.head__actions").append(headButton);
-        // $('.head__actions').eq(0).append(headButton);
+                $("#head_stats").remove();
 
-        $("#head_stats").insertAfter('div[class="head__action selector open--settings"]');
+                var headButton = '<div id="head_stats" class="head__action selector stats-data">' + pluginSVG + "</div>";
 
-        $("#head_stats").on("hover:enter hover:click hover:touch", function () {
+                // $("#app > div.head > div > div.head__actions").append(headButton);
+                // $('.head__actions').eq(0).append(headButton);
+                $('.head__actions').append(headButton);
 
-            var statsGists = Lampa.Storage.get("stats_gists", null);
-            if (statsGists && statsGists.hasOwnProperty(statsYear)) {
-                // data already generated
-                console.log('Stats', 'Data has already been generated and uploaded', statsGists[statsYear]);
+                console.log('Before insertAfter:', $("#head_stats").length);
+                $("#head_stats").insertAfter('div[class="head__action selector open--settings"]');
+                console.log('After insertAfter:', $("#head_stats").length);
 
-                var url = "https://lampab.github.io/#" + statsGists[statsYear];
-                var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"><img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '"></img></div><div class="broadcast__text">' + url + '</div></div>');
+                if ($("#head_stats").length > 0) { console.log('Stats', 'Head button added'); }
 
-                // display modal and progress bar there
-                Lampa.Modal.open({
-                    title: 'Итоги ' + statsYear + ' года с Лампой',
-                    html: modal,
-                    size: 'medium',
-                    onBack: () => {
-                        Lampa.Modal.close();
-                    },
-                });
+                $("#head_stats").on("hover:enter hover:click hover:touch", function () {
 
-                try {
-                    Lampa.Utils.copyTextToClipboard(url, () => {});
-                    Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
-                } catch (e) {}
+                    var statsGists = Lampa.Storage.get("stats_gists", null);
+                    if (statsGists && statsGists.hasOwnProperty(statsYear)) {
+                        // data already generated
+                        console.log('Stats', 'Data has already been generated and uploaded', statsGists[statsYear]);
+
+                        var url = "https://lampab.github.io/#" + statsGists[statsYear];
+                        var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"><img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '"></img></div><div class="broadcast__text">' + url + '</div></div>');
+
+                        // display modal and progress bar there
+                        Lampa.Modal.open({
+                            title: 'Итоги ' + statsYear + ' года с Лампой',
+                            html: modal,
+                            size: 'medium',
+                            onBack: () => {
+                                Lampa.Modal.close();
+                            },
+                        });
+
+                        try {
+                            Lampa.Utils.copyTextToClipboard(url, () => {});
+                            Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
+                        } catch (e) {}
 
 
-            } else {
-                console.log('Stats', 'Generating data and uploading it for the first time for year', statsYear);
+                    } else {
+                        console.log('Stats', 'Generating data and uploading it for the first time for year', statsYear);
 
-                var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"></div><div class="broadcast__scan"><div></div></div><div class="broadcast__text"></div></div>');
+                        var modal = $('<div><div class="stats__qr" style="text-align: center; margin-bottom: 20px"></div><div class="broadcast__scan"><div></div></div><div class="broadcast__text"></div></div>');
 
-                // display modal and progress bar there
-                Lampa.Modal.open({
-                    title: 'Итоги ' + statsYear + ' года с Лампой',
-                    html: modal,
-                    size: 'medium',
-                    onBack: () => {
-                        Lampa.Modal.close();
-                    },
-                });
+                        // display modal and progress bar there
+                        Lampa.Modal.open({
+                            title: 'Итоги ' + statsYear + ' года с Лампой',
+                            html: modal,
+                            size: 'medium',
+                            onBack: () => {
+                                Lampa.Modal.close();
+                            },
+                        });
 
-                var texts = ["анализируем данные", "считаем фильмы", "складываем время", "отправляем данные", "генерируем страницу с итогами", "создаем QR"];
-                var currentIndex = 0;
+                        var texts = ["анализируем данные", "считаем фильмы", "складываем время", "отправляем данные", "генерируем страницу с итогами", "создаем QR"];
+                        var currentIndex = 0;
 
-                function updateText() {
-                    try {
-                        // consider case when modal is closed
-                        var textElement = document.querySelector(".broadcast__text");
-                        textElement.textContent = texts[currentIndex];
-                        currentIndex++;
-                        if (currentIndex >= texts.length) {
+                        function updateText() {
+                            try {
+                                // consider case when modal is closed
+                                var textElement = document.querySelector(".broadcast__text");
+                                textElement.textContent = texts[currentIndex];
+                                currentIndex++;
+                                if (currentIndex >= texts.length) {
+                                    clearInterval(intervalId);
+                                }
+                            } catch (e) {}
+                        }
+                        var intervalId = setInterval(updateText, 2000);
+                        updateText();
+
+                        function updateLoader(intervalId, text) {
                             clearInterval(intervalId);
+                            var textElement = document.querySelector(".broadcast__text");
+                            textElement.innerHTML = text;
+                            var loader = document.querySelector(".broadcast__scan");
+                            loader.remove();
                         }
-                    } catch (e) {}
-                }
-                var intervalId = setInterval(updateText, 2000);
-                updateText();
 
-                function updateLoader(intervalId, text) {
-                    clearInterval(intervalId);
-                    var textElement = document.querySelector(".broadcast__text");
-                    textElement.innerHTML = text;
-                    var loader = document.querySelector(".broadcast__scan");
-                    loader.remove();
-                }
+                        var stats_movies_analyzed = null;
+                        var stats_movies = Lampa.Storage.get("stats_movies_watched");
+                        if (!stats_movies) {
+                            updateLoader(intervalId, "Отсутствуют данные для формирования итогов");
+                        } else {
+                            stats_movies_analyzed = analyzeMovies(stats_movies, statsYear);
+                        }
 
-                var stats_movies_analyzed = null;
-                var stats_movies = Lampa.Storage.get("stats_movies_watched");
-                if (!stats_movies) {
-                    updateLoader(intervalId, "Отсутствуют данные для формирования итогов");
-                } else {
-                    stats_movies_analyzed = analyzeMovies(stats_movies, statsYear);
-                }
+                        // upload data
+                        function createGist(stats) {
+                            console.log("Stats", "Creating Gist...");
+                            var network = new Lampa.Reguest();
+                            // https://docs.github.com/en/rest/gists/gists
+                            network.silent(
+                                "https://script.google.com/macros/s/AKfycbzl5IO19WUeydXOkCU7g9ghgLyxRAL1XhLkTCqHxvBOxheiEY9Sy8Qdev45l_TM65z_0g/exec", // moved to external script to hide github token
+                                (data) => {
+                                    // success
+                                    // {
+                                    //   "url": "https://api.github.com/gists/3a96be52ad8cb0daf1189fd2b08de883",
+                                    //   "id": "3a96be52ad8cb0daf1189fd2b08de883",
+                                    //   "html_url": "https://gist.github.com/3a96be52ad8cb0daf1189fd2b08de883",
+                                    //   ...
+                                    // }
+                                    if (data && data.id) {
+                                        console.log("Stats", "Gist created", data.id);
 
-                // upload data
-                function createGist(stats) {
-                    console.log("Stats", "Creating Gist...");
-                    var network = new Lampa.Reguest();
-                    var gistToken = "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";
-                    // https://docs.github.com/en/rest/gists/gists
-                    network.silent(
-                        "https://api.github.com/gists",
-                        (data) => {
-                            // success
-                            // {
-                            //   "url": "https://api.github.com/gists/3a96be52ad8cb0daf1189fd2b08de883",
-                            //   "id": "3a96be52ad8cb0daf1189fd2b08de883",
-                            //   "html_url": "https://gist.github.com/3a96be52ad8cb0daf1189fd2b08de883",
-                            //   ...
-                            // }
-                            if (data && data.id) {
-                                console.log("Stats", "Gist created", data.id);
+                                        // var url = 'https://gist.githubusercontent.com/lamp-a/' + data.id + '/raw';
+                                        var url = "https://lampab.github.io/#" + data.id;
 
-                                // var url = 'https://gist.githubusercontent.com/lamp-a/' + data.id + '/raw';
-                                var url = "https://lampab.github.io/#" + data.id;
+                                        updateLoader(intervalId, url);
+                                        try {
+                                            Lampa.Utils.copyTextToClipboard(url, () => {});
+                                            Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
+                                        } catch (e) {}
 
-                                updateLoader(intervalId, url);
-                                try {
-                                    Lampa.Utils.copyTextToClipboard(url, () => {});
-                                    Lampa.Noty.show("Ссылка на итоги года скопирована в буфер обмена");
-                                } catch (e) {}
+                                        var imgElement = document.querySelector(".stats__qr");
+                                        // https://quickchart.io/documentation/qr-codes/
+                                        imgElement.innerHTML = '<img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '">';
 
-                                var imgElement = document.querySelector(".stats__qr");
-                                // https://quickchart.io/documentation/qr-codes/
-                                imgElement.innerHTML = '<img src="https://quickchart.io/qr?margin=2&size=200&text=' + encodeURI(url) + '">';
-
-                                var gists = Lampa.Storage.get("stats_gists", {});
-                                gists[statsYear] = data.id;
-                                Lampa.Storage.set("stats_gists", gists);
-                            } else {
-                                console.log("Stats", "Failed to add gist", data);
-                                updateLoader(intervalId, "не удалось загрузить данные в Gist");
-                            }
-                        },
-                        (data) => {
-                            // error
-                            console.log("Stats", "Failed to create gist", data);
-                            updateLoader(intervalId, "не удалось загрузить данные в Gist");
-                        },
-                        JSON.stringify({
-                            files: {
-                                "data.js": {
-                                    content: "var json = " + "\n" + JSON.stringify(stats, null, 2),
+                                        var gists = Lampa.Storage.get("stats_gists", {});
+                                        gists[statsYear] = data.id;
+                                        Lampa.Storage.set("stats_gists", gists);
+                                    } else {
+                                        console.log("Stats", "Failed to add gist", data);
+                                        updateLoader(intervalId, "не удалось загрузить данные в Gist");
+                                    }
                                 },
-                            },
-                        }),
-                        {
-                            beforeSend: {
-                                name: "Authorization",
-                                value: "bearer " + gistToken,
-                            },
-                            headers: {
-                                Accept: "application/vnd.github+json",
-                                "X-GitHub-Api-Version": "2022-11-28",
-                            },
+                                (data) => {
+                                    // error
+                                    console.log("Stats", "Failed to create gist", data);
+                                    updateLoader(intervalId, "не удалось загрузить данные в Gist");
+                                },
+                                JSON.stringify({
+                                    files: {
+                                        "data.js": {
+                                            content: "var json = " + "\n" + JSON.stringify(stats, null, 2),
+                                        },
+                                    },
+                                }),
+                                {
+                                    headers: {
+                                        "Content-Type": "text/plain;charset=UTF-8"
+                                    },
+                                }
+                                );
                         }
-                        );
-                }
-                createGist(stats_movies_analyzed);
+                        createGist(stats_movies_analyzed);
+                    }
+                });
+                console.log('Stats', 'Finished to create head button');                
             }
-        });
-        console.log('Stats', 'Finished to create head button');
+        }, 100);
+
+
 }
     if (statsYear) { // the button should be added only from Dec 14 to Jan 15
         console.log("Stats", "New Year time, head button to be shown");

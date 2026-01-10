@@ -5,7 +5,7 @@
 
     var manifest = {
         type: "other",
-        version: "0.2.7",
+        version: "0.2.8",
         name: "Статистика",
         description: "Плагин для ведения статистики использования Лампы",
         component: "stats",
@@ -144,9 +144,18 @@
 
                     var movies_watched = Lampa.Storage.get("stats_movies_watched", {});
                     var movie = movies_watched[hash]; // add movie watched percent
-                    movie["p"] = percent;
+
+                    var prev_p  = movie["p"]  || 0;
+                    var prev_ti = movie["ti"] || 0;
+                    
+                    if (percent >= prev_p) {
+                        movie["p"] = percent;
+                    }
+                    
+                    if (time >= prev_ti) {
+                        movie["ti"] = time;
+                    }                    
                     movie["d"] = Date.now();
-                    movie["ti"] = time;
                     console.log("Stats", "movie", movie);
                     Lampa.Storage.set("stats_movies_watched", movies_watched);
                 } catch (e) {

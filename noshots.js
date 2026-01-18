@@ -213,9 +213,10 @@ function startPlugin() {
                     .shots-player-recorder,
                     .shots-player--recording,
                     [class*="shots-player"],
-                    button[data-controller="player_panel"]:has(circle[fill="#FF0707"]),
-                    button[data-controller="player_panel"]:has(circle[fill="#ff0707"]),
-                    button[data-controller="player_panel"]:has(circle[fill="red"]),
+                    [data-controller="player_panel"]:has(circle[fill="#FF0707"]),
+                    [data-controller="player_panel"]:has(circle[fill="#ff0707"]),
+                    [data-controller="player_panel"]:has(circle[fill="red"]),
+                    .player-panel__settings + [data-controller="player_panel"],
                     
                     /* Hide Shots modals and overlays */
                     .shots-modal,
@@ -237,32 +238,38 @@ function startPlugin() {
             // Also use JavaScript to remove elements that might not be caught by CSS
             setInterval(() => {
                 $('[class*="shots-"], [id*="shots-"], [data-shots], .shots-view-button, .shots-player-segments, .shots-player-recorder, .shots-modal, .shots-lenta').remove()
-                // Remove red Shots button from player panel
-                $('button[data-controller="player_panel"]').each(function() {
+                // Remove red Shots button from player panel (it's a div, not button)
+                $('[data-controller="player_panel"]').each(function() {
                     const $btn = $(this)
                     const hasRedCircle = $btn.find('circle[fill="#FF0707"]').length > 0 || 
                                         $btn.find('circle[fill="#ff0707"]').length > 0 ||
-                                        $btn.find('circle[fill="red"]').length > 0
+                                        $btn.find('circle[fill="red"]').length > 0 ||
+                                        ($btn.find('svg circle').length === 2 && $btn.find('svg circle').eq(1).attr('fill') === '#FF0707')
                     if (hasRedCircle) {
                         $btn.remove()
                     }
                 })
-            }, 500)
+            }, 200)
         }
 
         // Remove Shots from player
         function removeShotsPlayerIntegration() {
             // Function to remove Shots button from player panel
             function removeShotsPlayerButton() {
+                // The button is a div with class "button selector" and data-controller="player_panel"
+                // It's added after .player-panel__settings
+                const selector = '[data-controller="player_panel"]'
+                
+                // Check in PlayerPanel if available
                 if (Lampa.PlayerPanel && Lampa.PlayerPanel.render) {
                     const panel = Lampa.PlayerPanel.render()
-                    // Remove the red Shots record button (has data-controller="player_panel" and red circle SVG)
-                    panel.find('button[data-controller="player_panel"]').each(function() {
+                    panel.find(selector).each(function() {
                         const $btn = $(this)
                         // Check if it has the red circle SVG (Shots button)
                         const hasRedCircle = $btn.find('circle[fill="#FF0707"]').length > 0 || 
                                             $btn.find('circle[fill="#ff0707"]').length > 0 ||
-                                            $btn.find('circle[fill="red"]').length > 0
+                                            $btn.find('circle[fill="red"]').length > 0 ||
+                                            $btn.find('svg circle').length === 2 && $btn.find('svg circle').eq(1).attr('fill') === '#FF0707'
                         if (hasRedCircle) {
                             console.log('No Shots', 'Removed Shots record button from player panel')
                             $btn.remove()
@@ -271,32 +278,57 @@ function startPlugin() {
                     // Also remove by class if it has shots-related classes
                     panel.find('.shots-player-segments, [class*="shots-player"]').remove()
                 }
+                
+                // Also check globally in case it's not in the panel yet
+                $(selector).each(function() {
+                    const $btn = $(this)
+                    // Check if it has the red circle SVG (Shots button)
+                    const hasRedCircle = $btn.find('circle[fill="#FF0707"]').length > 0 || 
+                                        $btn.find('circle[fill="#ff0707"]').length > 0 ||
+                                        $btn.find('circle[fill="red"]').length > 0 ||
+                                        ($btn.find('svg circle').length === 2 && $btn.find('svg circle').eq(1).attr('fill') === '#FF0707')
+                    if (hasRedCircle) {
+                        console.log('No Shots', 'Removed Shots record button (global search)')
+                        $btn.remove()
+                    }
+                })
+            }
+            
+            // Intercept PlayerPanel.render to catch when button is added
+            if (Lampa.PlayerPanel && Lampa.PlayerPanel.render) {
+                const originalRender = Lampa.PlayerPanel.render
+                Lampa.PlayerPanel.render = function() {
+                    const result = originalRender.call(this)
+                    // Remove button after render
+                    setTimeout(removeShotsPlayerButton, 10)
+                    return result
+                }
             }
             
             // Listen for player events and remove Shots elements
             Lampa.Listener.follow('player', (e) => {
-                if (e.type === 'render' || e.type === 'ready' || e.type === 'open') {
+                if (e.type === 'render' || e.type === 'ready' || e.type === 'open' || e.type === 'start') {
                     setTimeout(() => {
                         // Remove Shots segments from player
                         $('.shots-player-segments, .shots-player-recorder, [class*="shots-player"]').remove()
                         // Remove Shots button from player panel
                         removeShotsPlayerButton()
-                    }, 100)
+                    }, 50)
                 }
             })
             
-            // Also listen for PlayerPanel events
+            // Also listen for PlayerPanel events if available
             if (Lampa.PlayerPanel && Lampa.PlayerPanel.listener) {
                 Lampa.PlayerPanel.listener.follow('render', () => {
-                    setTimeout(removeShotsPlayerButton, 50)
+                    setTimeout(removeShotsPlayerButton, 10)
                 })
             }
             
-            // Also periodically check and remove Shots elements from player
+            // Also periodically check and remove Shots elements from player (more frequent)
             setInterval(() => {
                 $('.shots-player-segments, .shots-player-recorder, [class*="shots-player"]').remove()
                 removeShotsPlayerButton()
-            }, 500)
+            }, 200)
         }
 
         // Initialize all removal functions

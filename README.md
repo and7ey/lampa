@@ -6,6 +6,7 @@
 4. [Балансер (источник) Synology NAS](README.md#балансер-источник-synology-nas-synology_nasjs)
 5. [Настройка шапки](README.md#настройка-шапки-head_filterjs)
 6. [Статистика](README.md#статистика-statsjs)
+7. [No Shots](README.md#no-shots-noshotsjs)
 
 ## Кинопоиск (kinopoisk.js)
 
@@ -214,6 +215,14 @@ https://and7ey.github.io/lampa/stats.js
 - В статистике не учитываются сериалы
 - Не учитываются профили
 - На [Lampac](https://github.com/immisterio/Lampac/) учитываются данные с разных устройств, но без учета профилей
+
+## No Shots (noshots.js)
+
+Удаляет всё, что касается Shots, из Лампы. 
+
+```
+https://and7ey.github.io/lampa/noshots.js
+```
 
 ### Ошибки
 Для поиска ошибок посмотрите в консоль Лампы (в левом меню Лампы выберите пункт меню "Консоль" - он находится в самом низу). Для просмотра ошибок плагина перейдите на вкладку "Stats". 
